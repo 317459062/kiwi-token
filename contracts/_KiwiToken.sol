@@ -211,7 +211,6 @@ contract _KiwiToken is ERC20Interface, Owned {
 
     }
 
-
     //a new 'block' to be mined
     function _startNewMiningEpoch() internal {
 
@@ -225,7 +224,7 @@ contract _KiwiToken is ERC20Interface, Owned {
       }
 
       //set the next minted supply at which the era will change
-      // total supply is 2100000000000000  because of 8 decimal places
+      // total supply is 700000000000000000  because of 8 decimal places
       maxSupplyForEra = _totalSupply - _totalSupply.div( 2**(rewardEra + 1));
 
       epochCount = epochCount.add(1);
@@ -236,27 +235,22 @@ contract _KiwiToken is ERC20Interface, Owned {
         _reAdjustDifficulty();
       }
 
-
       //make the latest ethereum block hash a part of the next challenge for PoW to prevent pre-mining future blocks
       //do this last since this is a protection mechanism in the mint() function
       challengeNumber = block.blockhash(block.number - 1);
 
     }
 
-    //https://en.bitcoin.it/wiki/Difficulty#What_is_the_formula_for_difficulty.3F
-    //as of 2017 the bitcoin difficulty was up to 17 zeroes, it was only 8 in the early days
-
     //readjust the target by 5 percent
     function _reAdjustDifficulty() internal {
-
 
         uint ethBlocksSinceLastDifficultyPeriod = block.number - latestDifficultyPeriodStarted;
         //assume 360 ethereum blocks per hour
 
-        //we want miners to spend 10 minutes to mine each 'block', about 60 ethereum blocks = one 0xbitcoin epoch
-        uint epochsMined = _BLOCKS_PER_READJUSTMENT; //256
+        //we want miners to spend 2 minutes to mine each 'block', about 12 ethereum blocks = one kiwi epoch
+        uint epochsMined = _BLOCKS_PER_READJUSTMENT;
 
-        uint targetEthBlocksPerDiffPeriod = epochsMined * 60; //should be 60 times slower than ethereum
+        uint targetEthBlocksPerDiffPeriod = epochsMined * 12; //should be 12 times slower than ethereum
 
         //if there were less eth blocks passed in time than expected
         if( ethBlocksSinceLastDifficultyPeriod < targetEthBlocksPerDiffPeriod )
@@ -307,7 +301,7 @@ contract _KiwiToken is ERC20Interface, Owned {
     //reward is cut in half every reward era (as tokens are mined)
     function getMiningReward() public constant returns (uint) {
          //every reward era, the reward amount halves.
-         return (50 * 10**uint(decimals) ).div( 2**rewardEra ) ;
+         return (5000 * 10**uint(decimals) ).div( 2**rewardEra ) ;
     }
 
     //help debug mining software
