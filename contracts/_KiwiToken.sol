@@ -124,7 +124,7 @@ contract _KiwiToken is ERC20Interface, Owned {
     uint public _totalSupply;
     uint public latestDifficultyPeriodStarted;
     uint public epochCount;                 //number of 'blocks' mined
-    uint public _BLOCKS_PER_READJUSTMENT = 1024;
+    uint public _BLOCKS_PER_READJUSTMENT = 512;
 
     //a little number and a big number
     uint public  _MINIMUM_TARGET = 2**16;
@@ -178,10 +178,7 @@ contract _KiwiToken is ERC20Interface, Owned {
 
     }
 
-
-
-
-        function mint(uint256 nonce, bytes32 challenge_digest) public returns (bool success) {
+    function mint(uint256 nonce, bytes32 challenge_digest) public returns (bool success) {
 
 
             //the PoW must contain work that includes a recent ethereum block hash (challenge number) and the msg.sender's address to prevent MITM attacks
