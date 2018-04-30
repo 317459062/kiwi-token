@@ -163,15 +163,12 @@ contract _KiwiToken is ERC20Interface, Owned {
         _totalSupply = 7000000000 * 10**uint(decimals);
 
         if(locked) revert();
+
         locked = true;
-
         tokensMinted = 0;
-
         rewardEra = 0;
         maxSupplyForEra = _totalSupply.div(2);
-
         miningTarget = _MAXIMUM_TARGET;
-
         latestDifficultyPeriodStarted = block.number;
 
         _startNewMiningEpoch();
@@ -180,46 +177,39 @@ contract _KiwiToken is ERC20Interface, Owned {
 
     function mint(uint256 nonce, bytes32 challenge_digest) public returns (bool success) {
 
+      //the PoW must contain work that includes a recent ethereum block hash (challenge number) and the msg.sender's address to prevent MITM attacks
+      bytes32 digest =  keccak256(challengeNumber, msg.sender, nonce );
 
-            //the PoW must contain work that includes a recent ethereum block hash (challenge number) and the msg.sender's address to prevent MITM attacks
-            bytes32 digest =  keccak256(challengeNumber, msg.sender, nonce );
+      //the challenge digest must match the expected
+      if (digest != challenge_digest) revert();
 
-            //the challenge digest must match the expected
-            if (digest != challenge_digest) revert();
+      //the digest must be smaller than the target
+      if(uint256(digest) > miningTarget) revert();
 
-            //the digest must be smaller than the target
-            if(uint256(digest) > miningTarget) revert();
+      //only allow one reward for each challenge
+      bytes32 solution = solutionForChallenge[challengeNumber];
+      solutionForChallenge[challengeNumber] = digest;
+      if(solution != 0x0) revert();  //prevent the same answer from awarding twice
 
+      uint reward_amount = getMiningReward();
+      balances[msg.sender] = balances[msg.sender].add(reward_amount);
+      tokensMinted = tokensMinted.add(reward_amount);
 
-            //only allow one reward for each challenge
-             bytes32 solution = solutionForChallenge[challengeNumber];
-             solutionForChallenge[challengeNumber] = digest;
-             if(solution != 0x0) revert();  //prevent the same answer from awarding twice
+      //Cannot mint more tokens than there are
+      assert(tokensMinted <= maxSupplyForEra);
 
+      //set readonly diagnostics data
+      lastRewardTo = msg.sender;
+      lastRewardAmount = reward_amount;
+      lastRewardEthBlockNumber = block.number;
 
-            uint reward_amount = getMiningReward();
+      _startNewMiningEpoch();
 
-            balances[msg.sender] = balances[msg.sender].add(reward_amount);
+      Mint(msg.sender, reward_amount, epochCount, challengeNumber );
 
-            tokensMinted = tokensMinted.add(reward_amount);
+      return true;
 
-
-            //Cannot mint more tokens than there are
-            assert(tokensMinted <= maxSupplyForEra);
-
-            //set readonly diagnostics data
-            lastRewardTo = msg.sender;
-            lastRewardAmount = reward_amount;
-            lastRewardEthBlockNumber = block.number;
-
-
-             _startNewMiningEpoch();
-
-              Mint(msg.sender, reward_amount, epochCount, challengeNumber );
-
-           return true;
-
-        }
+    }
 
 
     //a new 'block' to be mined
@@ -251,15 +241,7 @@ contract _KiwiToken is ERC20Interface, Owned {
       //do this last since this is a protection mechanism in the mint() function
       challengeNumber = block.blockhash(block.number - 1);
 
-
-
-
-
-
     }
-
-
-
 
     //https://en.bitcoin.it/wiki/Difficulty#What_is_the_formula_for_difficulty.3F
     //as of 2017 the bitcoin difficulty was up to 17 zeroes, it was only 8 in the early days
@@ -288,14 +270,11 @@ contract _KiwiToken is ERC20Interface, Owned {
           miningTarget = miningTarget.sub(miningTarget.div(2000).mul(excess_block_pct_extra));   //by up to 50 %
         }else{
           uint shortage_block_pct = (ethBlocksSinceLastDifficultyPeriod.mul(100)).div( targetEthBlocksPerDiffPeriod );
-
           uint shortage_block_pct_extra = shortage_block_pct.sub(100).limitLessThan(1000); //always between 0 and 1000
 
           //make it easier
           miningTarget = miningTarget.add(miningTarget.div(2000).mul(shortage_block_pct_extra));   //by up to 50 %
         }
-
-
 
         latestDifficultyPeriodStarted = block.number;
 
@@ -325,219 +304,115 @@ contract _KiwiToken is ERC20Interface, Owned {
        return miningTarget;
    }
 
-
-
-    //21m coins total
-    //reward begins at 50 and is cut in half every reward era (as tokens are mined)
+    //reward is cut in half every reward era (as tokens are mined)
     function getMiningReward() public constant returns (uint) {
-        //once we get half way thru the coins, only get 25 per block
-
          //every reward era, the reward amount halves.
-
          return (50 * 10**uint(decimals) ).div( 2**rewardEra ) ;
-
     }
 
     //help debug mining software
     function getMintDigest(uint256 nonce, bytes32 challenge_digest, bytes32 challenge_number) public view returns (bytes32 digesttest) {
-
         bytes32 digest = keccak256(challenge_number,msg.sender,nonce);
-
         return digest;
-
       }
 
-        //help debug mining software
+      //help debug mining software
       function checkMintSolution(uint256 nonce, bytes32 challenge_digest, bytes32 challenge_number, uint testTarget) public view returns (bool success) {
-
           bytes32 digest = keccak256(challenge_number,msg.sender,nonce);
-
           if(uint256(digest) > testTarget) revert();
-
           return (digest == challenge_digest);
-
         }
 
-
-
     // ------------------------------------------------------------------------
-
     // Total supply
-
     // ------------------------------------------------------------------------
-
     function totalSupply() public constant returns (uint) {
-
         return _totalSupply  - balances[address(0)];
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Get the token balance for account `tokenOwner`
-
     // ------------------------------------------------------------------------
-
     function balanceOf(address tokenOwner) public constant returns (uint balance) {
-
         return balances[tokenOwner];
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Transfer the balance from token owner's account to `to` account
-
     // - Owner's account must have sufficient balance to transfer
-
     // - 0 value transfers are allowed
-
     // ------------------------------------------------------------------------
-
     function transfer(address to, uint tokens) public returns (bool success) {
-
         balances[msg.sender] = balances[msg.sender].sub(tokens);
-
         balances[to] = balances[to].add(tokens);
-
         Transfer(msg.sender, to, tokens);
-
         return true;
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Token owner can approve for `spender` to transferFrom(...) `tokens`
-
     // from the token owner's account
-
     //
-
     // https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
-
     // recommends that there are no checks for the approval double-spend attack
-
     // as this should be implemented in user interfaces
-
     // ------------------------------------------------------------------------
-
     function approve(address spender, uint tokens) public returns (bool success) {
-
         allowed[msg.sender][spender] = tokens;
-
         Approval(msg.sender, spender, tokens);
-
         return true;
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Transfer `tokens` from the `from` account to the `to` account
-
     //
-
     // The calling account must already have sufficient tokens approve(...)-d
-
     // for spending from the `from` account and
-
     // - From account must have sufficient balance to transfer
-
     // - Spender must have sufficient allowance to transfer
-
     // - 0 value transfers are allowed
-
     // ------------------------------------------------------------------------
-
     function transferFrom(address from, address to, uint tokens) public returns (bool success) {
-
         balances[from] = balances[from].sub(tokens);
-
         allowed[from][msg.sender] = allowed[from][msg.sender].sub(tokens);
-
         balances[to] = balances[to].add(tokens);
-
         Transfer(from, to, tokens);
-
         return true;
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Returns the amount of tokens approved by the owner that can be
-
     // transferred to the spender's account
-
     // ------------------------------------------------------------------------
-
     function allowance(address tokenOwner, address spender) public constant returns (uint remaining) {
-
         return allowed[tokenOwner][spender];
-
     }
 
 
-
     // ------------------------------------------------------------------------
-
     // Token owner can approve for `spender` to transferFrom(...) `tokens`
-
     // from the token owner's account. The `spender` contract function
-
     // `receiveApproval(...)` is then executed
-
     // ------------------------------------------------------------------------
-
     function approveAndCall(address spender, uint tokens, bytes data) public returns (bool success) {
-
         allowed[msg.sender][spender] = tokens;
-
         Approval(msg.sender, spender, tokens);
-
         ApproveAndCallFallBack(spender).receiveApproval(msg.sender, tokens, this, data);
-
         return true;
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Don't accept ETH
-
     // ------------------------------------------------------------------------
-
     function () public payable {
-
         revert();
-
     }
 
-
-
     // ------------------------------------------------------------------------
-
     // Owner can transfer out any accidentally sent ERC20 tokens
-
     // ------------------------------------------------------------------------
-
     function transferAnyERC20Token(address tokenAddress, uint tokens) public onlyOwner returns (bool success) {
-
         return ERC20Interface(tokenAddress).transfer(owner, tokens);
-
     }
 
 }
