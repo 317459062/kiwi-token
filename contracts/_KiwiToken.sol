@@ -7,7 +7,7 @@ pragma solidity ^0.4.18;
 //
 // Symbol      : Kiwi
 // Name        : Kiwi Token
-// Total supply: 21,000,000.00
+// Total supply: 7 000 000 000 (7 Billion)
 // Decimals    : 8
 //
 // ----------------------------------------------------------------------------
@@ -118,45 +118,23 @@ contract _KiwiToken is ERC20Interface, Owned {
     using SafeMath for uint;
     using ExtendedMath for uint;
 
-
     string public symbol;
-
     string public  name;
-
     uint8 public decimals;
-
     uint public _totalSupply;
-
-
-
-     uint public latestDifficultyPeriodStarted;
-
-
-
-    uint public epochCount;//number of 'blocks' mined
-
-
+    uint public latestDifficultyPeriodStarted;
+    uint public epochCount;                 //number of 'blocks' mined
     uint public _BLOCKS_PER_READJUSTMENT = 1024;
 
-
-    //a little number
+    //a little number and a big number
     uint public  _MINIMUM_TARGET = 2**16;
-
-
-      //a big number is easier ; just find a solution that is smaller
-    //uint public  _MAXIMUM_TARGET = 2**224;  bitcoin uses 224
     uint public  _MAXIMUM_TARGET = 2**234;
 
-
     uint public miningTarget;
-
     bytes32 public challengeNumber;   //generate a new one when a new reward is minted
-
-
 
     uint public rewardEra;
     uint public maxSupplyForEra;
-
 
     address public lastRewardTo;
     uint public lastRewardAmount;
@@ -169,30 +147,20 @@ contract _KiwiToken is ERC20Interface, Owned {
     uint public tokensMinted;
 
     mapping(address => uint) balances;
-
-
     mapping(address => mapping(address => uint)) allowed;
 
 
     event Mint(address indexed from, uint reward_amount, uint epochCount, bytes32 newChallengeNumber);
 
     // ------------------------------------------------------------------------
-
     // Constructor
-
     // ------------------------------------------------------------------------
+    function _KiwiToken() public onlyOwner{
 
-    function _0xBitcoinToken() public onlyOwner{
-
-
-
-        symbol = "0xBTC";
-
-        name = "0xBitcoin Token";
-
+        symbol = "Kiwi";
+        name = "Kiwi Token";
         decimals = 8;
-
-        _totalSupply = 21000000 * 10**uint(decimals);
+        _totalSupply = 7000000000 * 10**uint(decimals);
 
         if(locked) revert();
         locked = true;
@@ -207,11 +175,6 @@ contract _KiwiToken is ERC20Interface, Owned {
         latestDifficultyPeriodStarted = block.number;
 
         _startNewMiningEpoch();
-
-
-        //The owner gets nothing! You must mine this ERC20 token
-        //balances[owner] = _totalSupply;
-        //Transfer(address(0), owner, _totalSupply);
 
     }
 
