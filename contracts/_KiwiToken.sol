@@ -1,6 +1,5 @@
 pragma solidity ^0.4.18;
 
-
 // ----------------------------------------------------------------------------
 // 'Kiwi Token' contract
 // Mineable ERC20 Token using Proof Of Work
@@ -107,13 +106,29 @@ contract Owned {
     }
 }
 
+interface EIP918Interface  {
+
+    function mint(uint256 nonce, bytes32 challenge_digest) public returns (bool success);
+
+    function getChallengeNumber() public constant returns (bytes32);
+
+    function getMiningDifficulty() public constant returns (uint);
+
+    function getMiningTarget() public constant returns (uint);
+
+    function getMiningReward() public constant returns (uint);
+
+    event Mint(address indexed from, uint reward_amount, uint epochCount, bytes32 newChallengeNumber);
+
+}
+
 
 // ----------------------------------------------------------------------------
 // ERC20 Token, with the addition of symbol, name and decimals and an
 // initial fixed supply
 // ----------------------------------------------------------------------------
 
-contract _KiwiToken is ERC20Interface, Owned {
+contract _KiwiToken is ERC20Interface, Owned, EIP918Interface {
 
     using SafeMath for uint;
     using ExtendedMath for uint;
@@ -148,9 +163,6 @@ contract _KiwiToken is ERC20Interface, Owned {
 
     mapping(address => uint) balances;
     mapping(address => mapping(address => uint)) allowed;
-
-
-    event Mint(address indexed from, uint reward_amount, uint epochCount, bytes32 newChallengeNumber);
 
     // ------------------------------------------------------------------------
     // Constructor
