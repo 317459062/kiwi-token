@@ -124,8 +124,7 @@ interface EIP918Interface  {
 
 
 // ----------------------------------------------------------------------------
-// ERC20 Token, with the addition of symbol, name and decimals and an
-// initial fixed supply
+// Mineable ERC918 / ERC20 Token
 // ----------------------------------------------------------------------------
 
 contract _KiwiToken is ERC20Interface, Owned, EIP918Interface {
